@@ -14,7 +14,7 @@ class SocketService {
 
         console.log(`[Socket] Connecting to signaling server for room: ${roomId}`);
         const IS_PROD = import.meta.env.PROD;
-        const SOCKET_URL = IS_PROD ? window.location.origin : `http://${window.location.hostname}:3001`;
+        const SOCKET_URL = import.meta.env.VITE_API_URL || (IS_PROD ? window.location.origin : `http://${window.location.hostname}:3001`);
         this.socket = io(SOCKET_URL);
 
         const identity = JSON.parse(localStorage.getItem('portal_identity') || '{"name":"Unknown"}');

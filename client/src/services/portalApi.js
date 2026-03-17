@@ -1,5 +1,6 @@
 const IS_PROD = import.meta.env.PROD;
-const API_BASE = IS_PROD ? '/api/portal' : `http://${window.location.hostname}:3001/api/portal`;
+const API_URL = import.meta.env.VITE_API_URL || (IS_PROD ? window.location.origin : `http://${window.location.hostname}:3001`);
+const API_BASE = `${API_URL}/api/portal`;
 
 export const generatePortalCode = async () => {
     const identityString = localStorage.getItem('portal_identity') || '{}';
