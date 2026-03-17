@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25c0f4",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#101e22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .portal-ring {
+            box-shadow: 0 0 40px rgba(37, 192, 244, 0.3), inset 0 0 20px rgba(37, 192, 244, 0.2);
+        }
+        .scanner-line {
+            background: linear-gradient(to bottom, transparent, #25c0f4, transparent);
+            height: 2px;
+            width: 100%;
+            position: absolute;
+            top: 0;
+        }
+        .glitch-text {
+            text-shadow: 2px 0 #25c0f422, -2px 0 #ff00ff22;
+        }
+    </style>
+<style>
+    .perspective-container {
+        perspective: 1200px;
+    }
+    .terminal-screen {
+        transform: rotateX(5deg) rotateY(-5deg) translateZ(0);
+        transition: transform 0.5s ease;
+        background: radial-gradient(circle at center, rgba(37, 192, 244, 0.05) 0%, transparent 70%);
+    }
+    .glass-prism {
+        background: rgba(37, 192, 244, 0.05);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(37, 192, 244, 0.3);
+        box-shadow: 0 0 30px rgba(37, 192, 244, 0.2), inset 0 0 15px rgba(37, 192, 244, 0.1);
+        transform-style: preserve-3d;
+        transform: perspective(500px) rotateX(10deg);
+    }
+    .scanline-effect {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, transparent 50%, rgba(37, 192, 244, 0.02) 50%);
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 40;
+    }
+    .scan-motion {
+        position: absolute;
+        width: 100%;
+        height: 100px;
+        background: linear-gradient(to bottom, transparent, rgba(37, 192, 244, 0.1), transparent);
+        animation: scan 8s linear infinite;
+        pointer-events: none;
+        z-index: 41;
+    }
+    @keyframes scan {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(100vh); }
+    }
+    .rotating-hud {
+        animation: spin 20s linear infinite;
+    }
+    .rotating-hud-reverse {
+        animation: spin-reverse 15s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    @keyframes spin-reverse {
+        from { transform: rotate(360deg); }
+        to { transform: rotate(0deg); }
+    }
+    .energy-beam {
+        position: absolute;
+        width: 1px;
+        height: 100%;
+        background: linear-gradient(to bottom, transparent, #25c0f4, transparent);
+        opacity: 0.2;
+        animation: beam-move 10s infinite linear;
+    }
+    @keyframes beam-move {
+        0% { transform: translateX(-100vw) skewX(-45deg); }
+        100% { transform: translateX(200vw) skewX(-45deg); }
+    }
+</style><style>
+    @keyframes spin-reel {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-50%); }
+    }
+    .animate-spin-reel {
+        animation: spin-reel 0.2s linear infinite;
+    }
+    @keyframes lock-pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0px #25c0f4; }
+        50% { transform: scale(1.1); box-shadow: 0 0 20px #25c0f4; }
+        100% { transform: scale(1); box-shadow: 0 0 5px #25c0f4; }
+    }
+    .lock-animation {
+        animation: lock-pulse 0.4s ease-out forwards;
+    }
+    .neon-slot {
+        border: 2px solid #25c0f4;
+        box-shadow: 0 0 10px rgba(37, 192, 244, 0.5), inset 0 0 10px rgba(37, 192, 244, 0.3);
+    }
+    .reel-mask {
+        mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+        -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+    }
+</style></head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen selection:bg-primary/30">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 px-6 py-4 lg:px-10 bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-8 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">deployed_code</span>
+</div>
+<h2 class="text-slate-100 text-xl font-bold leading-tight tracking-tight uppercase">PortalDrop</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden perspective-container"><div class="scanline-effect"></div><div class="scan-motion"></div><div class="energy-beam" style="left: 20%; animation-delay: 0s;"></div><div class="energy-beam" style="left: 50%; animation-delay: 3s;"></div><div class="energy-beam" style="left: 80%; animation-delay: 6s;"></div>
+<!-- Background Decorative Tech Accents -->
+<div class="absolute top-20 left-20 w-32 h-32 border-l border-t border-primary/20 opacity-50"></div>
+<div class="absolute bottom-20 right-20 w-32 h-32 border-r border-b border-primary/20 opacity-50"></div>
+<!-- Main Portal Visualizer -->
+<div class="relative w-full max-w-lg aspect-square flex items-center justify-center terminal-screen">
+<!-- Outer Rotating Ring Decoration (CSS Only) -->
+<div class="absolute inset-0 border-[1px] border-dashed border-primary/20 rounded-full"></div>
+<div class="absolute inset-8 border-[2px] border-primary/10 rounded-full"></div>
+<!-- Main Glowing Portal Ring -->
+<div class="absolute inset-0 rotating-hud pointer-events-none opacity-30">
+<svg class="w-full h-full text-primary" viewbox="0 0 200 200">
+<circle cx="100" cy="100" fill="none" r="98" stroke="currentColor" stroke-dasharray="10 5" stroke-width="0.5"></circle>
+<path d="M10,100 A90,90 0 0,1 190,100" fill="none" stroke="currentColor" stroke-dasharray="20 10" stroke-width="2"></path>
+</svg>
+</div><div class="relative w-4/5 h-4/5 rounded-full border-4 border-primary/40 flex items-center justify-center portal-ring bg-primary/5 group overflow-hidden">
+<!-- Inner Holographic Image/Pattern -->
+<div class="absolute inset-4 rounded-full opacity-40 mix-blend-screen overflow-hidden">
+<img class="w-full h-full object-cover grayscale brightness-150 contrast-125" data-alt="Abstract glowing blue nebula space portal" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC30JLxexDtl0KahAgFKDl7g1HkcFROvWhJBjQGWb3gbVnIQltKbKaVehsHWuRMt7BIQy0CjpOGJF7px2255X8b1mXI7BpHSkR_in0X5ulT7CuV0cNIhsrIsRlEI87fgIPq6b_4N6OBW6-5JdKA-dcPZU4COIwg1limcWwrTuVndjapJRTs2kCRw1BMxJFiCoLqETPgoW9fjBJg-p9jvLmHsH65571vD7E3XZxMYopeQKRBtmxkUmx3AtfJAueXnY75fwcbnlk5how"/>
+</div>
+<!-- Data Stream Elements -->
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<div class="flex flex-col items-center gap-6 z-10">
+<div class="flex flex-col items-center">
+<span class="text-primary text-[10px] tracking-[0.4em] font-bold uppercase mb-2 opacity-70">Sequence Active</span>
+<div class="flex gap-4">
+<div class="glass-prism p-2 rounded-xl flex justify-center items-center relative z-20"><div class="flex gap-4 p-2">
+<!-- Slot 1 -->
+<div class="neon-slot w-16 h-24 md:w-20 md:h-32 bg-background-dark/80 rounded-lg flex flex-col items-center justify-center overflow-hidden reel-mask relative">
+<div class="flex flex-col items-center text-4xl md:text-5xl font-bold text-primary animate-spin-reel">
+<span>A</span><span>X</span><span>7</span><span>K</span><span>2</span><span>B</span><span>A</span><span>X</span><span>7</span><span>K</span><span>2</span><span>B</span>
+</div>
+</div>
+<!-- Slot 2 -->
+<div class="neon-slot w-16 h-24 md:w-20 md:h-32 bg-background-dark/80 rounded-lg flex flex-col items-center justify-center overflow-hidden reel-mask relative">
+<div class="flex flex-col items-center text-4xl md:text-5xl font-bold text-primary animate-spin-reel" style="animation-duration: 0.15s;">
+<span>7</span><span>R</span><span>A</span><span>5</span><span>M</span><span>K</span><span>7</span><span>R</span><span>A</span><span>5</span><span>M</span><span>K</span>
+</div>
+</div>
+<!-- Slot 3 -->
+<div class="neon-slot w-16 h-24 md:w-20 md:h-32 bg-background-dark/80 rounded-lg flex flex-col items-center justify-center overflow-hidden reel-mask relative">
+<div class="flex flex-col items-center text-4xl md:text-5xl font-bold text-primary animate-spin-reel" style="animation-duration: 0.25s;">
+<span>K</span><span>9</span><span>L</span><span>P</span><span>3</span><span>Z</span><span>K</span><span>9</span><span>L</span><span>P</span><span>3</span><span>Z</span>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-primary text-sm font-medium tracking-widest uppercase">&gt; INITIALIZING_HANDSHAKE: LISTENING...</span>
+</div>
+</div>
+</div>
+<!-- Scanline Overlay -->
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/2 pointer-events-none"></div>
+</div><div class="absolute -inset-4 rotating-hud-reverse pointer-events-none opacity-20">
+<svg class="w-full h-full text-primary" viewbox="0 0 200 200">
+<circle cx="100" cy="100" fill="none" r="95" stroke="currentColor" stroke-dasharray="1 4" stroke-width="1"></circle>
+</svg>
+</div>
+<!-- Holographic Side Labels -->
+<div class="absolute left-0 top-1/2 -translate-y-1/2 -rotate-90 hidden md:block">
+<span class="text-[10px] text-primary/40 font-mono tracking-[0.5em] uppercase">Transfer_Protocol_V4.0</span>
+</div>
+<div class="absolute right-0 top-1/2 -translate-y-1/2 rotate-90 hidden md:block">
+<span class="text-[10px] text-primary/40 font-mono tracking-[0.5em] uppercase">Encrypted_Channel_Secure</span>
+</div>
+</div>
+<!-- Footer Content -->
+<div class="mt-12 text-center max-w-md">
+<h1 class="text-3xl font-bold text-slate-100 mb-4 font-mono tracking-tighter">Create Portal</h1>
+<p class="text-slate-400 text-base leading-relaxed mb-8">
+                        Share the 3-character connection code with the secondary device to establish a zero-gravity data bridge.
+                    </p>
+<div class="flex flex-col gap-4">
+<div class="bg-primary/5 border border-primary/20 rounded-lg px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">sensors</span>
+<span class="text-sm font-medium text-slate-300">Signal Strength</span>
+</div>
+<div class="flex gap-1">
+<div class="w-1.5 h-3 bg-primary rounded-full"></div>
+<div class="w-1.5 h-3 bg-primary rounded-full"></div>
+<div class="w-1.5 h-3 bg-primary rounded-full"></div>
+<div class="w-1.5 h-3 bg-primary/20 rounded-full"></div>
+</div>
+</div>
+<button class="w-full bg-primary hover:shadow-[0_0_20px_rgba(37,192,244,0.6)] text-background-dark font-bold py-4 rounded-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 group">
+<span class="material-symbols-outlined group-hover:rotate-180 transition-transform duration-500">sync</span>
+<span class="tracking-[0.2em]">INITIALIZE PORTAL GENERATION</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Bottom Status Bar -->
+<footer class="border-t border-primary/10 bg-background-dark/50 p-4">
+<div class="flex justify-between items-center text-[10px] font-mono text-primary/60 uppercase tracking-widest px-4">
+<div class="flex items-center gap-4">
+<span>SYS_STATUS: NOMINAL</span>
+<span>|</span>
+<span>LATENCY: 12ms</span>
+</div>
+<div class="flex items-center gap-4">
+<span>REGION: ARC-NORTH-01</span>
+</div>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

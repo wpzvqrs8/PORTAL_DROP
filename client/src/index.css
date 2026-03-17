@@ -1,0 +1,255 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Inter:wght@300;400;500;600;700;900&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #050709;
+    color: #f1f5f9;
+    overflow-x: hidden;
+  }
+
+  .font-mono,
+  [class*="font-mono"] {
+    font-family: 'JetBrains Mono', monospace !important;
+  }
+}
+
+@layer utilities {
+
+  /* ── Glass panel ─────────────────────────────── */
+  .glass-panel {
+    background: rgba(10, 15, 20, 0.55);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-panel-3d {
+    background: rgba(8, 12, 18, 0.6);
+    backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  /* ── Neon glows per color ────────────────────── */
+  .glow-cyan {
+    box-shadow: 0 0 24px -4px rgba(34, 211, 238, 0.5), 0 0 60px -12px rgba(34, 211, 238, 0.25);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 24px -4px rgba(168, 85, 247, 0.5), 0 0 60px -12px rgba(168, 85, 247, 0.25);
+  }
+
+  .glow-pink {
+    box-shadow: 0 0 24px -4px rgba(236, 72, 153, 0.5), 0 0 60px -12px rgba(236, 72, 153, 0.25);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 24px -4px rgba(74, 222, 128, 0.5), 0 0 60px -12px rgba(74, 222, 128, 0.25);
+  }
+
+  .glow-amber {
+    box-shadow: 0 0 24px -4px rgba(245, 158, 11, 0.5), 0 0 60px -12px rgba(245, 158, 11, 0.25);
+  }
+
+  /* ── Neon border accent strips ───────────────── */
+  .neon-border-cyan {
+    border-color: rgba(34, 211, 238, 0.4);
+  }
+
+  .neon-border-purple {
+    border-color: rgba(168, 85, 247, 0.4);
+  }
+
+  .neon-border-pink {
+    border-color: rgba(236, 72, 153, 0.4);
+  }
+
+  /* ── Holographic scanlines ───────────────────── */
+  .holographic-overlay {
+    background: repeating-linear-gradient(0deg,
+        rgba(34, 211, 238, 0.025) 0px,
+        rgba(34, 211, 238, 0.025) 1px,
+        transparent 1px,
+        transparent 3px);
+  }
+
+  /* ── Legacy CSS grid (kept for compat) ───────── */
+  .cyber-grid {
+    background-image:
+      linear-gradient(to right, rgba(34, 211, 238, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(34, 211, 238, 0.08) 1px, transparent 1px);
+    background-size: 60px 60px;
+    transform: perspective(1000px) rotateX(60deg) translateY(-200px) scale(2);
+    opacity: 0.25;
+  }
+
+  /* ── Custom scrollbar ────────────────────────── */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(34, 211, 238, 0.3) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(34, 211, 238, 0.3);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(34, 211, 238, 0.6);
+  }
+
+  /* ── Neon gradient text ──────────────────────── */
+  .text-neon-gradient {
+    background: linear-gradient(135deg, #22d3ee 0%, #a855f7 50%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Panel color accent strips ───────────────── */
+  .accent-strip-cyan {
+    background: linear-gradient(to bottom, #22d3ee, #0e7490);
+  }
+
+  .accent-strip-purple {
+    background: linear-gradient(to bottom, #a855f7, #6b21a8);
+  }
+
+  .accent-strip-pink {
+    background: linear-gradient(to bottom, #ec4899, #9d174d);
+  }
+}
+
+/* ── Keyframes ────────────────────────────────── */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+
+  50% {
+    transform: translateY(-16px) rotate(1.5deg);
+  }
+}
+
+@keyframes neon-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes particle-flow {
+  0% {
+    transform: translateY(0) translateX(0) scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translateY(-100vh) translateX(50px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes rotate-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotate-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes slide-in-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sweep-border {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes warp-spin {
+  from {
+    transform: rotateY(0deg);
+  }
+
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+/* ── Utility class shortcuts ──────────────────── */
+.floating-card {
+  animation: float 6s ease-in-out infinite;
+}
+
+.neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.animate-spin-3d {
+  animation: warp-spin 4s linear infinite;
+}
+
+.particle {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: particle-flow 15s linear infinite;
+}
+
+/* ── 3D panel tilt base style ─────────────────── */
+.panel-3d {
+  transform-style: preserve-3d;
+  will-change: transform;
+}

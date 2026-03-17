@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#25c0f4",
+              "background-light": "#f5f8f8",
+              "background-dark": "#101e22",
+              "panel": "#1a2e35",
+            },
+            fontFamily: {
+              "display": ["Space Grotesk"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Space Grotesk', sans-serif; }
+        .portal-glow {
+            box-shadow: 0 0 40px -10px rgba(37, 192, 244, 0.5);
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(37, 192, 244, 0.05) 50%);
+            background-size: 100% 4px;
+        }
+    </style>
+<style>
+    @keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes rotate-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    @keyframes pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    @keyframes cube-float { 0%, 100% { transform: translateY(0) rotateX(45deg) rotateY(45deg); } 50% { transform: translateY(-10px) rotateX(45deg) rotateY(45deg); } }
+    
+    .grid-floor {
+        background-image: 
+            linear-gradient(to right, rgba(37, 192, 244, 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(37, 192, 244, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        transform: perspective(500px) rotateX(60deg);
+        transform-origin: bottom;
+    }
+
+    .volumetric-beam {
+        background: linear-gradient(90deg, transparent, rgba(37, 192, 244, 0.2), rgba(37, 192, 244, 0.5), rgba(37, 192, 244, 0.2), transparent);
+        filter: blur(8px);
+        animation: pulse-glow 3s infinite ease-in-out;
+    }
+
+    .sidebar-3d-left {
+        transform: perspective(1000px) rotateY(10deg);
+        transition: transform 0.5s ease;
+    }
+    .sidebar-3d-left:hover { transform: perspective(1000px) rotateY(5deg); }
+
+    .sidebar-3d-right {
+        transform: perspective(1000px) rotateY(-10deg);
+        transition: transform 0.5s ease;
+    }
+    .sidebar-3d-right:hover { transform: perspective(1000px) rotateY(-5deg); }
+
+    .cube-container {
+        perspective: 400px;
+        width: 60px;
+        height: 60px;
+    }
+    .cube {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        animation: rotate-slow 10s infinite linear;
+    }
+    .cube-face {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 1px solid rgba(37, 192, 244, 0.8);
+        background: rgba(37, 192, 244, 0.1);
+        box-shadow: inset 0 0 10px rgba(37, 192, 244, 0.4);
+    }
+    .front  { transform: translateZ(30px); }
+    .back   { transform: rotateY(180deg) translateZ(30px); }
+    .right  { transform: rotateY(90deg) translateZ(30px); }
+    .left   { transform: rotateY(-90deg) translateZ(30px); }
+    .top    { transform: rotateX(90deg) translateZ(30px); }
+    .bottom { transform: rotateX(-90deg) translateZ(30px); }
+</style></head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between border-b border-primary/20 px-8 py-4 bg-background-light dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined text-4xl">gate</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight text-primary">PortalDrop <span class="text-slate-500 font-light ml-2">Terminal 0.9.4</span></h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+<span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-xs font-medium text-emerald-500 uppercase tracking-widest">System Online</span>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg bg-slate-200 dark:bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
+<span class="material-symbols-outlined">settings_input_component</span>
+</button>
+<button class="p-2 rounded-lg bg-slate-200 dark:bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
+<span class="material-symbols-outlined">power_settings_new</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Dashboard Area -->
+<main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden relative overflow-hidden"><div class="absolute inset-0 grid-floor pointer-events-none opacity-40 z-0"></div>
+<!-- Left Panel: Clipboard Sharing -->
+<aside class="col-span-12 lg:col-span-3 flex flex-col gap-6 sidebar-3d-left z-10">
+<div class="bg-white dark:bg-panel p-5 rounded-xl border border-slate-200 dark:border-primary/20 flex-1 flex flex-col">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">content_paste_go</span>
+<h3 class="font-bold text-lg uppercase tracking-tight">Clipboard Sharing</h3>
+</div>
+<div class="flex-1 overflow-y-auto space-y-4 pr-2">
+<!-- Holographic Preview Item -->
+<div class="p-4 rounded-lg bg-primary/5 border-l-2 border-primary group hover:bg-primary/10 transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-primary/60 font-mono">ENCRYPTED_BUF_01</span>
+<span class="text-[10px] text-slate-500 uppercase">2 mins ago</span>
+</div>
+<p class="text-sm line-clamp-3 font-mono opacity-80">https://quantum-node.internal/api/v1/auth-token/7782-9912-XA</p>
+</div>
+<div class="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50 border-l-2 border-slate-400 dark:border-slate-700 opacity-60">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-mono">TEXT_FRAGMENT_09</span>
+<span class="text-[10px] uppercase">15 mins ago</span>
+</div>
+<p class="text-sm line-clamp-3 font-mono">The portal synchronization is complete. Awaiting user input for final data handshake.</p>
+</div>
+</div>
+<div class="mt-6">
+<button class="w-full py-3 px-4 bg-primary text-background-dark font-bold rounded-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">send_to_mobile</span>
+                        SEND CLIPBOARD
+                    </button>
+</div>
+</div>
+<div class="bg-white dark:bg-panel p-5 rounded-xl border border-slate-200 dark:border-primary/20">
+<h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Network Load</h4>
+<div class="h-24 w-full bg-slate-100 dark:bg-slate-900/50 rounded flex items-end gap-1 p-2">
+<div class="w-full bg-primary/20 h-1/3 rounded-t-sm"></div>
+<div class="w-full bg-primary/30 h-1/2 rounded-t-sm"></div>
+<div class="w-full bg-primary/40 h-2/3 rounded-t-sm"></div>
+<div class="w-full bg-primary/60 h-3/4 rounded-t-sm"></div>
+<div class="w-full bg-primary h-5/6 rounded-t-sm"></div>
+<div class="w-full bg-primary/80 h-1/2 rounded-t-sm"></div>
+<div class="w-full bg-primary/40 h-1/4 rounded-t-sm"></div>
+</div>
+</div>
+</aside>
+<!-- Central Portal Gate Interface -->
+<section class="col-span-12 lg:col-span-6 flex flex-col gap-4">
+<div class="relative flex-1 bg-black rounded-2xl border-4 border-slate-800 overflow-hidden flex items-center justify-center portal-glow"><!-- Portal Background -->
+<div class="absolute inset-0 scanline opacity-30"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent"></div>
+<!-- Volumetric Beams -->
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-16 volumetric-beam pointer-events-none"></div>
+<!-- The Multi-Ring Gate -->
+<div class="relative z-10 flex items-center justify-center">
+<!-- Outer Ring -->
+<div class="absolute size-[460px] border border-primary/20 rounded-full animate-[rotate-slow_20s_linear_infinite]"></div>
+<!-- Mid Ring -->
+<div class="absolute size-[400px] border-[4px] border-primary/30 border-dashed rounded-full animate-[rotate-reverse_15s_linear_infinite]"></div>
+<!-- Inner Ring -->
+<div class="absolute size-[340px] border-[8px] border-primary/10 rounded-full flex items-center justify-center">
+<div class="absolute inset-0 border-[2px] border-primary/40 rounded-full animate-pulse"></div>
+<div class="size-[300px] rounded-full bg-primary/5 flex items-center justify-center overflow-hidden backdrop-blur-sm">
+<div class="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent"></div>
+<div class="text-primary/80 flex flex-col items-center">
+<span class="material-symbols-outlined text-8xl mb-2 drop-shadow-[0_0_15px_rgba(37,192,244,0.8)]">hub</span>
+<span class="text-xs font-mono tracking-[0.4em] uppercase">Ready for Transfer</span>
+</div>
+</div>
+</div>
+</div>
+<!-- HUD Overlays -->
+<div class="absolute top-6 left-6 font-mono text-[10px] text-primary space-y-1 z-20">
+<p>PORTAL_STABILITY: 99.8%</p>
+<p>SYNC_PHASE: 0.002ms</p>
+<p>COORDS: 42.128 // -71.21</p>
+</div>
+<div class="absolute bottom-6 right-6 font-mono text-[10px] text-primary text-right space-y-1 z-20">
+<p>GATE_ID: PT-X900</p>
+<p>BUFFER_STATUS: NOMINAL</p>
+</div></div>
+<div class="flex items-center justify-center gap-4 py-2">
+<button class="px-6 py-2 rounded-full border border-primary/40 text-primary text-sm font-bold tracking-widest uppercase hover:bg-primary hover:text-background-dark transition-all">Manual Override</button>
+<button class="px-6 py-2 rounded-full border border-red-500/40 text-red-500 text-sm font-bold tracking-widest uppercase hover:bg-red-500 hover:text-white transition-all">Abort Sync</button>
+</div>
+</section>
+<!-- Right Panel: File Transfer Area -->
+<aside class="col-span-12 lg:col-span-3 flex flex-col gap-6 sidebar-3d-right z-10">
+<div class="bg-white dark:bg-panel p-5 rounded-xl border border-slate-200 dark:border-primary/20 flex-1 flex flex-col">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">upload_file</span>
+<h3 class="font-bold text-lg uppercase tracking-tight">File Transfer</h3>
+</div>
+<!-- Drag and Drop Zone -->
+<div class="flex-1 flex flex-col gap-4">
+<div class="border-2 border-dashed border-primary/40 rounded-xl bg-primary/5 flex flex-col items-center justify-center p-8 text-center group hover:border-primary hover:bg-primary/10 transition-all">
+<span class="material-symbols-outlined text-5xl text-primary/60 mb-4 group-hover:scale-110 transition-transform">cloud_upload</span>
+<p class="text-sm font-medium mb-1">Drop files here to warp</p>
+<p class="text-[10px] text-slate-500 uppercase">Max size: 500 EB</p>
+</div>
+<div class="grid grid-cols-2 gap-3"><!-- 3D Cube 1 -->
+<div class="aspect-square rounded-lg bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center p-3 relative overflow-hidden group">
+<div class="cube-container mb-4">
+<div class="cube">
+<div class="cube-face front"></div>
+<div class="cube-face back"></div>
+<div class="cube-face right"></div>
+<div class="cube-face left"></div>
+<div class="cube-face top"></div>
+<div class="cube-face bottom"></div>
+</div>
+</div>
+<span class="text-[10px] font-mono truncate w-full text-center relative z-10">core_data.pkg</span>
+</div>
+<!-- 3D Cube 2 -->
+<div class="aspect-square rounded-lg bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center p-3 relative overflow-hidden group">
+<div class="cube-container mb-4">
+<div class="cube" style="animation-duration: 15s; animation-direction: reverse;">
+<div class="cube-face front"></div>
+<div class="cube-face back"></div>
+<div class="cube-face right"></div>
+<div class="cube-face left"></div>
+<div class="cube-face top"></div>
+<div class="cube-face bottom"></div>
+</div>
+</div>
+<span class="text-[10px] font-mono truncate w-full text-center relative z-10">shader_cache.lib</span>
+</div></div>
+</div>
+<div class="mt-6 flex gap-2">
+<button class="flex-1 py-2 px-3 bg-slate-200 dark:bg-slate-800 text-xs font-bold rounded-lg uppercase tracking-widest border border-slate-300 dark:border-slate-700">Clear</button>
+<button class="flex-1 py-2 px-3 bg-primary text-background-dark text-xs font-bold rounded-lg uppercase tracking-widest">Process All</button>
+</div>
+</div>
+<div class="bg-white dark:bg-panel p-5 rounded-xl border border-slate-200 dark:border-primary/20">
+<h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">storage</span>
+                    Vault Storage
+                </h4>
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[42%]"></div>
+</div>
+<span class="text-[10px] font-mono">42%</span>
+</div>
+</div>
+</aside>
+</main>
+<!-- Bottom Status Bar -->
+<footer class="bg-white dark:bg-background-dark border-t border-primary/20 p-4">
+<div class="max-w-[1400px] mx-auto grid grid-cols-12 gap-6 items-center">
+<!-- Connection Status -->
+<div class="col-span-3 flex items-center gap-4">
+<div class="flex flex-col">
+<span class="text-[10px] text-slate-500 uppercase tracking-tighter">Connection Status</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">wifi_tethering</span>
+<span class="text-xs font-bold font-mono text-primary">SECURE_LINK_STABLE</span>
+</div>
+</div>
+</div>
+<!-- Neon Progress Bar -->
+<div class="col-span-6 flex flex-col gap-1">
+<div class="flex justify-between items-end">
+<span class="text-[10px] text-primary/60 font-mono tracking-widest">TRANSMISSION_PROGRESS</span>
+<span class="text-xs font-bold text-primary">76%</span>
+</div>
+<div class="h-2 w-full bg-primary/10 rounded-full border border-primary/20 relative overflow-hidden">
+<div class="absolute top-0 left-0 h-full bg-primary shadow-[0_0_15px_#25c0f4] w-[76%] rounded-full"></div>
+</div>
+</div>
+<!-- Connected User Indicator -->
+<div class="col-span-3 flex justify-end">
+<div class="flex items-center gap-3 bg-primary/5 px-4 py-2 rounded-full border border-primary/20">
+<div class="size-6 rounded-full bg-primary/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xs">person</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[9px] text-slate-500 leading-none">PEER_NODE</span>
+<span class="text-xs font-bold text-primary leading-tight">NEO_OPERATOR_01</span>
+</div>
+</div>
+</div>
+</div>
+</footer>
+</body></html>
