@@ -383,7 +383,7 @@ const staticPath = path.join(__dirname, '../client/dist');
 app.use(express.static(staticPath));
 
 // Catch-all route to serve the React application for any non-API routes
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(staticPath, 'index.html'));
 });
 
