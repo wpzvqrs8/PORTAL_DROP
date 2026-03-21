@@ -5,6 +5,7 @@ import PortalGate from '../components/PortalGate';
 import FileDropZone from '../components/FileDropZone';
 import ConnectionStatus from '../components/ConnectionStatus';
 import SocketService from '../services/socketService';
+import WebRTCService from '../services/webrtcService';
 import { fetchTransfers, uploadFile, fetchChats, sendChat, fetchPortalDetails } from '../services/portalApi';
 import ChatPanel from '../components/ChatPanel';
 import Scene3D from '../components/Scene3D';
@@ -109,10 +110,30 @@ export default function PortalRoom() {
             .then(data => { if (Array.isArray(data)) setChats(data.reverse()); })
             .catch(console.error);
 
+        if (!isHost) {
+            WebRTCService.initialize(code, false);
+        }
+
+        WebRTCService.on('onConnected', () => {
+             console.log('[Room] WebRTC Connected P2P');
+             setStatus('SECURE_LINK_STABLE');
+        });
+        
+        WebRTCService.on('onDisconnected', () => {
+             console.log('[Room] WebRTC Disconnected P2P');
+             setStatus('RESTORING_LINK');
+        });
+
+        WebRTCService.on('onProgress', (prog) => {
+             setProgress(prog);
+             if (prog > 0 && prog < 100) setTransferActive(true);
+             if (prog >= 100) setTimeout(() => { setTransferActive(false); setProgress(0); }, 800);
+        });
+
         const handleConnected = () => setStatus('SECURE_LINK_STABLE');
         const handleTransfer = (data) => {
             if (data.type === 'file') {
-                const fileUrl = data.file_path && (data.file_path.startsWith('http') || data.file_path.startsWith('https'))
+                const fileUrl = data.file_path && (data.file_path.startsWith('http') || data.file_path.startsWith('blob'))
                     ? data.file_path
                     : `http://${window.location.hostname}:3001/data/${data.file_path}`;
                 setFiles(prev => [{ name: data.file_name, id: data.id, url: fileUrl }, ...prev]);
@@ -124,11 +145,19 @@ export default function PortalRoom() {
             setTransferActive(false);
         };
         const handleChat = (data) => setChats(prev => [...prev, data]);
+        
+        WebRTCService.on('onTransferReceived', handleTransfer);
+        WebRTCService.on('onChatReceived', handleChat);
+
         const handlePeerJoined = (user) => {
             if (user?.name) setPeerName(user.name);
             setStatus('SECURE_LINK_STABLE');
             const identity = JSON.parse(localStorage.getItem('portal_identity') || '{"name":"Unknown"}');
             SocketService.socket?.emit('peer-ack', { code, user: identity });
+            
+            if (isHost) {
+                WebRTCService.initialize(code, true);
+            }
         };
         const handlePeerAck = (user) => {
             if (user?.name) setPeerName(user.name);
@@ -141,24 +170,46 @@ export default function PortalRoom() {
         SocketService.on('peer-joined', handlePeerJoined);
         SocketService.on('peer-ack', handlePeerAck);
 
-        return () => SocketService.disconnect();
+        return () => {
+            SocketService.disconnect();
+            WebRTCService.cleanup();
+        };
     }, [code, isHost]);
 
     const handleSendMessage = async (text) => {
         if (!text.trim() || status !== 'SECURE_LINK_STABLE') return;
-        try { await sendChat(code, text); } catch (err) { console.error('Chat failed:', err); }
+        const identity = getIdentity();
+        try {
+            const newChat = {
+                id: Math.random().toString(36).substr(2, 9),
+                content: text,
+                sender_name: identity.name,
+                device_id: identity.deviceId,
+                created_at: new Date().toISOString()
+            };
+            setChats(prev => [...prev, newChat]);
+            WebRTCService.sendChatData(text, identity.name, identity.deviceId);
+        } catch (err) { console.error('Chat failed:', err); }
     };
 
     const processFiles = async (filesToProcess) => {
         setTransferActive(true);
         setStatus('SENDING_DATA');
         setProgress(10);
+        const identity = getIdentity();
         try {
             for (let i = 0; i < filesToProcess.length; i++) {
-                setProgress(20 + (i / filesToProcess.length) * 70);
-                await uploadFile(code, filesToProcess[i]);
+                const file = filesToProcess[i];
+                const url = URL.createObjectURL(file);
+                setFiles(prev => [{ name: file.name, id: Math.random().toString(36).substring(7), url }, ...prev]);
+                
+                await new Promise((resolve) => {
+                    WebRTCService.sendFile(file, identity.name, (prog) => {
+                        setProgress(Math.max(10, prog));
+                        if (prog >= 100) resolve();
+                    });
+                });
             }
-            setProgress(100);
             setTimeout(() => { setTransferActive(false); setStatus('SECURE_LINK_STABLE'); setProgress(0); }, 800);
         } catch (err) {
             console.error('Upload failed:', err);
@@ -180,6 +231,10 @@ export default function PortalRoom() {
         if (status !== 'SECURE_LINK_STABLE') return;
         const selectedFiles = Array.from(e.target.files || []);
         if (selectedFiles.length === 0) return;
+        
+        // Reset input to allow selecting the same file again and prevent duplicates
+        e.target.value = null;
+
         await processFiles(selectedFiles);
     };
 

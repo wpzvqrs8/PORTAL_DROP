@@ -57,30 +57,24 @@ export default function FileDropZone({ files = [], onFileSelect, code }) {
                                             onClick={async (e) => {
                                                 e.stopPropagation();
                                                 try {
-                                                    // Use the pre-signed/public URL if available
-                                                    if (file.url) {
-                                                        const a = document.createElement('a');
-                                                        a.href = file.url;
-                                                        a.download = file.name;
-                                                        a.target = "_blank"; // Open in new tab for cross-origin safety
-                                                        document.body.appendChild(a);
-                                                        a.click();
-                                                        a.remove();
-                                                        return;
-                                                    }
-
-                                                    const resp = await fetch(`/api/portal/${code}/file/${encodeURIComponent(file.name)}`);
+                                                    // Always fetch the file directly to avoid Cross-Origin "Open in new tab" behavior
+                                                    const urlToFetch = file.url ? file.url : `/api/portal/${code}/file/${encodeURIComponent(file.name)}`;
+                                                    
+                                                    const resp = await fetch(urlToFetch);
                                                     if (!resp.ok) throw new Error('Download failed');
+                                                    
                                                     const blob = await resp.blob();
-                                                    const url = window.URL.createObjectURL(blob);
+                                                    const objectUrl = window.URL.createObjectURL(blob);
+                                                    
                                                     const a = document.createElement('a');
-                                                    a.href = url;
+                                                    a.href = objectUrl;
                                                     a.download = file.name;
                                                     document.body.appendChild(a);
                                                     a.click();
                                                     a.remove();
-                                                    window.URL.revokeObjectURL(url);
-                                                } catch (err) { console.error(err); }
+                                                    
+                                                    window.URL.revokeObjectURL(objectUrl);
+                                                } catch (err) { console.error('Download error:', err); }
                                             }}
                                             className="mt-1.5 text-[9px] text-pink-400 font-bold uppercase flex items-center gap-1 hover:text-pink-300 transition-colors"
                                         >

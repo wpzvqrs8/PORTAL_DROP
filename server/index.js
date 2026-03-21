@@ -55,31 +55,41 @@ app.post('/api/portal/me', async (req, res) => {
         if (ip.includes('::ffff:')) ip = ip.split('::ffff:')[1];
         if (ip === '::1') ip = '127.0.0.1';
 
-        const filter = `device_id.eq."${deviceId || 'none'}",ip_address.eq."${ip}"`;
-        console.log(`[Portal Probe] Device: ${deviceId}, IP: ${ip}, Filter: ${filter}`);
+        if (supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('portals')
+                    .select('*')
+                    .or(`device_id.eq."${deviceId || 'none'}",ip_address.eq."${ip}"`)
+                    .gt('expires_at', new Date().toISOString())
+                    .order('created_at', { ascending: false })
+                    .limit(1);
 
-        const { data, error } = await supabase
-            .from('portals')
-            .select('*')
-            .or(`device_id.eq."${deviceId || 'none'}",ip_address.eq."${ip}"`)
-            .gt('expires_at', new Date().toISOString())
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        if (error) {
-            console.error('[Supabase Error - /me]', error);
-            throw error;
+                if (!error && data && data.length > 0) {
+                    return res.json({ active: true, portal: data[0] });
+                }
+            } catch(e) {}
         }
-
-        if (data && data.length > 0) {
-            return res.json({ active: true, portal: data[0] });
+        
+        // Memory fallback probe
+        let found = null;
+        for (const [code, portal] of memoryPortals.entries()) {
+            if ((portal.device_id === deviceId || portal.ip_address === ip) && new Date(portal.expires_at) > new Date()) {
+                found = portal;
+                break;
+            }
         }
+        if (found) return res.json({ active: true, portal: found });
+
         res.json({ active: false });
     } catch (err) {
-        console.error('[API Error]', err);
+        console.error('[API Error/me]', err);
         res.status(500).json({ error: err.message });
     }
 });
+
+// In-Memory fallback for when Supabase is missing or errors locally
+const memoryPortals = new Map();
 
 app.post('/api/portal/create', async (req, res) => {
     try {
@@ -87,52 +97,39 @@ app.post('/api/portal/create', async (req, res) => {
         let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
         if (ip.includes('::ffff:')) ip = ip.split('::ffff:')[1];
         if (ip === '::1') ip = '127.0.0.1';
-        console.log(`[Portal Create] Device: ${deviceId}, IP: ${ip}`);
-
-        // Check if user has an active portal
-        const { data: recent, error: recentError } = await supabase
-            .from('portals')
-            .select('*')
-            .or(`device_id.eq."${deviceId || 'none'}",ip_address.eq."${ip}"`)
-            .gt('expires_at', new Date().toISOString())
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        if (recentError) {
-            console.error('[Supabase Error - /create]', recentError);
-            throw recentError;
-        }
 
         const code = generateCode();
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+        
+        const newPortal = {
+            code,
+            status: 'waiting',
+            ip_address: ip,
+            device_id: deviceId || null,
+            creator_name: name || null,
+            expires_at: expiresAt,
+            created_at: new Date().toISOString()
+        };
 
-        if (recent && recent.length > 0) {
-            return res.status(400).json({
-                error: 'Active Portal Exists',
-                message: 'You already have an active portal session.',
-                existingCode: recent[0].code,
-                expiresAt: recent[0].expires_at
-            });
+        // If Supabase is connected, try to insert
+        if (supabase) {
+            try {
+                // We disabled the "existing portal" restriction here to allow seamless localhost dev.
+                const { data: created, error: createError } = await supabase
+                    .from('portals')
+                    .insert([newPortal])
+                    .select();
+                
+                if (createError) throw createError;
+                return res.json(created[0]);
+            } catch (err) {
+                console.warn('[Supabase Fallback] Error inserting portal, using memory store.', err.message);
+            }
         }
 
-        // Insert new
-        const { data: created, error: createError } = await supabase
-            .from('portals')
-            .insert([{
-                code,
-                status: 'waiting',
-                ip_address: ip,
-                device_id: deviceId || null,
-                creator_name: name || null,
-                expires_at: expiresAt
-            }])
-            .select();
-
-        if (createError) {
-            console.error('[Supabase Error - /create insert]', createError);
-            throw createError;
-        }
-        res.json(created[0]);
+        // Memory Fallback
+        memoryPortals.set(code, newPortal);
+        res.json(newPortal);
     } catch (err) {
         console.error('[API Error]', err);
         res.status(500).json({ error: err.message });
@@ -143,16 +140,22 @@ app.post('/api/portal/join', async (req, res) => {
     let { code } = req.body;
     if (code) code = code.toUpperCase();
     try {
-        const { data: portals, error: findError } = await supabase
-            .from('portals')
-            .select('*')
-            .eq('code', code)
-            .limit(1);
+        let portalData = null;
+        let usingMemory = false;
 
-        const portalData = portals && portals.length > 0 ? portals[0] : null;
+        if (supabase) {
+            try {
+                const { data: portals } = await supabase.from('portals').select('*').eq('code', code).limit(1);
+                if (portals && portals.length > 0) portalData = portals[0];
+            } catch(e) {}
+        }
+        
+        if (!portalData && memoryPortals.has(code)) {
+            portalData = memoryPortals.get(code);
+            usingMemory = true;
+        }
 
-        if (findError || !portalData) {
-            console.error('[Supabase Error - /join lookup]', findError || 'Portal not found');
+        if (!portalData) {
             return res.status(404).json({ error: 'Portal not found' });
         }
 
@@ -162,18 +165,19 @@ app.post('/api/portal/join', async (req, res) => {
             return res.status(403).json({ error: 'Portal expired. Sessions only last 5 minutes.' });
         }
 
-        const { data: updateData, error: updateError } = await supabase
-            .from('portals')
-            .update({ status: 'connected' })
-            .eq('code', code)
-            .select();
+        portalData.status = 'connected';
 
-        if (updateError) throw updateError;
+        if (!usingMemory && supabase) {
+            try {
+                await supabase.from('portals').update({ status: 'connected' }).eq('code', code);
+            } catch(e) {}
+        } else {
+            memoryPortals.set(code, portalData);
+        }
 
-        io.to(code).emit('portal-connected', updateData[0]);
-        res.json(updateData[0]);
+        io.to(code).emit('portal-connected', portalData);
+        res.json(portalData);
     } catch (err) {
-        console.error('[API Error]', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -261,14 +265,17 @@ app.get('/api/portal/:code', async (req, res) => {
     let { code } = req.params;
     if (code) code = code.toUpperCase();
     try {
-        const { data: portals, error: error } = await supabase
-            .from('portals')
-            .select('*')
-            .eq('code', code)
-            .limit(1);
+        let portalData = null;
+        if (supabase) {
+            try {
+                const { data: portals } = await supabase.from('portals').select('*').eq('code', code).limit(1);
+                if (portals && portals.length > 0) portalData = portals[0];
+            } catch(e) {}
+        }
+        if (!portalData && memoryPortals.has(code)) portalData = memoryPortals.get(code);
 
-        if (error || !portals || portals.length === 0) return res.status(404).json({ error: 'Portal not found' });
-        res.json(portals[0]);
+        if (!portalData) return res.status(404).json({ error: 'Portal not found' });
+        res.json(portalData);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -368,11 +375,17 @@ setInterval(async () => {
 io.on('connection', (socket) => {
     socket.on('join-room', ({ code, user }) => {
         socket.join(code);
-        socket.to(code).emit('peer-joined', user);
+        socket.to(code).emit('peer-joined', { ...user, peerId: socket.id });
     });
 
     socket.on('peer-ack', ({ code, user }) => {
-        socket.to(code).emit('peer-ack', user);
+        socket.to(code).emit('peer-ack', { ...user, peerId: socket.id });
+    });
+
+    socket.on('webrtc-signal', ({ code, targetPeerId, signal }) => {
+        // If targetPeerId is provided, we could emit directly `io.to(targetPeerId).emit(...)`
+        // But for portals we'll just broadcast to the room, so the other peer gets it.
+        socket.to(code).emit('webrtc-signal', { signal, senderPeerId: socket.id });
     });
 
     socket.on('disconnect', () => { });

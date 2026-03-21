@@ -28,8 +28,10 @@ class SocketService {
         // Bubble up events
         this.socket.on('portal-connected', (data) => this.emit('portal-connected', data));
         this.socket.on('transfer-received', (data) => this.emit('transfer-received', data));
+        this.socket.on('chat-received', (data) => this.emit('chat-received', data));
         this.socket.on('peer-joined', (data) => this.emit('peer-joined', data));
         this.socket.on('peer-ack', (data) => this.emit('peer-ack', data));
+        this.socket.on('webrtc-signal', (data) => this.emit('webrtc-signal', data));
     }
 
     on(event, callback) {
@@ -43,9 +45,18 @@ class SocketService {
         }
     }
 
-    sendSignal(targetPeerId, signalData) {
-        console.log(`[Socket] Sending signal to ${targetPeerId}`);
-        // Stub
+    sendSignal(code, targetPeerId, signal) {
+        if (!this.socket) return;
+        this.socket.emit('webrtc-signal', { code, targetPeerId, signal });
+    }
+
+    off(event, callback) {
+        if (!this.listeners[event]) return;
+        this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    }
+
+    removeAllListeners() {
+        this.listeners = {};
     }
 
     disconnect() {
@@ -53,6 +64,7 @@ class SocketService {
             this.socket.disconnect();
             this.socket = null;
         }
+        this.removeAllListeners();
         console.log('[Socket] Disconnected from signaling server');
         this.connected = false;
     }
